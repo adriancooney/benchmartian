@@ -1,0 +1,178 @@
+#!/usr/bin/env node
+
+var benchmark = require("benchmark"),
+	argv = require("optimist").argv,
+	fs = require("fs"),
+	vm = require("vm"),
+	EventEmitter = require("events").EventEmitter,
+	path = require("path");
+
+const BENCHMARK_DIRECTORY = "benchmark";
+const DEFAULT_REPORTER = "basic";
+
+// Parse the arguments passed
+if(argv.help) { // Show help
+	help();
+	process.exit();
+} 
+
+if(argv.reporters) { // Show reporters
+	return console.log(fs.readdirSync("./../reporters").map(function(r) { 
+		if(r == "index.js") return;
+		return r.replace(".js", "")
+	}).filter(function(f) { return f }).join(", "));
+}
+
+// Get the reporter
+var reporter = require("./../reporters/" + (argv.reporter || "basic"));
+
+// Get which files to benchmark
+var files = [];
+
+if(!argv._.length) {
+	// No benchmark files provided
+	
+	var benchDir = path.resolve(process.cwd(), BENCHMARK_DIRECTORY);
+
+	// Look in current directory for /benchmark directory
+	fs.stat(benchDir, function(err, stats) {
+		if(err) return fail(err.code == "ENOENT" ? "Please supply test file(s) or store them in /benchmark directory." : err);
+
+		// Read through the directory
+		fs.readdir(benchDir, function(err, filenames) {
+			if(err) return fail(err);
+			if(!filenames.length) return fail("Please supply test file(s) or populate the /benchmark directory. It is currently empty.");
+
+			// Filter out any non-js files
+			filenames = filenames.filter(function(file) {
+				return file.match(/\.js$/);
+			}).map(function(file) {
+				return "benchmark/" + file;
+			});
+
+			run(filenames, complete);
+		});
+	});
+
+} else {
+	// Benchmark file(s) provided, test only these
+	run(argv._, complete);
+}
+
+/**
+ * All tests are complete.
+ * @param  {Object} results 
+ */
+function complete(results) {
+	reporter.emit("complete", results);
+}
+
+/**
+ * Benchmark a file.
+ * @param  {String} file File path.
+ */
+function bench(file, filename, callback) {
+
+	var suite = new benchmark.Suite;
+
+	// Send the suite to the reporter
+	reporter.emit("file", filename, suite);
+
+	// Move onto the next 
+	suite.on("complete", callback.bind(this, suite));
+
+	try {
+		// SYNCRONOUS code execution.
+		vm.runInContext(
+			// Expose the suite functions for some suite syntax (wahey, puns!)
+			"with (suite) {" +
+			"\n\n\n\n\n" + // Isolate the code so the above isn't show in errors.
+			// Looks and feels very hacky.
+
+				file +
+
+			"\n\n\n\n\n" +
+			"}" +
+
+			// The only benchmarkjs function invoked by benchmartian
+			// Stringify options if provided.
+			"if(!suite.running) suite.run({ aync: true })",
+
+			vm.createContext({ 
+				suite: suite
+			}));
+	} catch(err) {
+		console.log(("Error in " + filename).red);
+		console.log(err.stack);
+	}
+}
+
+/**
+ * Run the benchmark tests on an array or files
+ * @param  {Array} files 
+ */
+function run(files, callback) {
+	var _results = {};
+
+	reporter.emit("begin", files);
+
+	(function next(files) {
+
+		var file = files.pop();
+
+		if(file) {
+			// Get each file
+			getFile(path.resolve(process.cwd(), file), function(contents) {
+				//Benchmark each file
+				bench(contents, file, function(results) {
+					// Store the results
+					_results[file] = results;
+
+					// Move onto the next file
+					next(files);
+				});
+			});
+		} else callback(_results);
+	})(files);
+}
+
+/**
+ * Get a file only if it exists, otherwise fail.
+ * @param {String} path 
+ * @param {Function} callback(files)
+ */
+function getFile(filePath, callback) {
+	fs.readFile(filePath, function(err, file) {
+		if(err) return fail(err.code == "ENOENT" ? "File '" + path.basename(filePath) + "' does not exist." : err);
+		callback(file);
+	});
+}
+
+/**
+ * Exit the script gracefully with an error message.
+ * @param  {String} message  Error message.
+ * @param  {Number} exitCode Error code supplied to process.exit
+ */
+function fail(message, exitCode) {
+	if(typeof message == "object") throw message;
+
+	console.warn(message);
+	help();
+	process.exit(exitCode);
+}
+
+/**
+ * Display benchmartian help.
+ */
+function help() {
+	console.log([
+		"benchmartian -- Run benchmark.js benchmarks from the CLI.",
+		"",
+		"Usage:",
+		"  benchmartian [files]     Begin benchmarking. If no are files supplied, benchmartian looks in `benchmark/`.",
+		"  --reporter [reported]    Select a reporter from /reporters. Defaults to basic.",
+		"  --reporters              Print out available reporters.",
+		"  --help                   Print this help."
+	 ].join("\n"));
+}
+

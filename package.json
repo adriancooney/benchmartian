@@ -1,0 +1,21 @@
+{
+  "name": "benchmartian",
+  "version": "0.0.1",
+  "description": "Benchmark.js mocha like command line interface",
+  "bin": {
+    "benchmartian": "./bin/benchmartian"
+  },
+  "keywords": [
+    "benchmark",
+    "mocha",
+    "test",
+    "benchmarkjs"
+  ],
+  "author": "Adrian Cooney",
+  "license": "MIT",
+  "dependencies": {
+    "benchmark": "~1.0.0",
+    "optimist": "~0.6.0",
+    "colors": "~0.6.2"
+  }
+}
