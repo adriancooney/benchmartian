@@ -71,7 +71,7 @@ function complete(results) {
  * Benchmark a file.
  * @param  {String} file File path.
  */
-function bench(file, filename, callback) {
+function bench(filename, callback) {
 
 	var suite = new benchmark.Suite;
 
@@ -82,25 +82,43 @@ function bench(file, filename, callback) {
 	suite.on("complete", callback.bind(this, suite));
 
 	try {
-		// SYNCRONOUS code execution.
-		vm.runInContext(
-			// Expose the suite functions for some suite syntax (wahey, puns!)
-			"with (suite) {" +
-			"\n\n\n\n\n" + // Isolate the code so the above isn't show in errors.
-			// Looks and feels very hacky.
+		// This feels like madness, but to my defence, this is basically the
+		// same mocha uses (exposing globals). The reason I'm using this method
+		// if because the context of ANY (including vm) is just an object. This
+		// means require, exports etc. aren't defined! I have no idea why this is
+		// or if it's a bug but it has lead me to resort to this method.
 
-				file +
+		// Add the globals
+		var fns = Object.keys(benchmark.Suite.prototype),
+			cache = {};
 
-			"\n\n\n\n\n" +
-			"}" +
+		fns.forEach(function(fn) {
+			var func = benchmark.Suite.prototype[fn];
+			if(typeof func === "function") global[fn] = func.bind(suite);
+		});
 
-			// The only benchmarkjs function invoked by benchmartian
-			// Stringify options if provided.
-			"if(!suite.running) suite.run({ aync: true })",
+		// And expose the options
+		global.options = {
+			async: true // Async is on by default
+		};
 
-			vm.createContext({ 
-				suite: suite
-			}));
+		// Add the suite for property accessing
+		global.suite = suite;
+
+		// Require the tests
+		require(path.resolve(process.cwd(), filename));
+
+		// Start the tests
+		if(!suite.running) suite.run(global.options);
+
+		// Remove the globals
+		fns.forEach(function(fn) {
+			delete global[fn];
+		});
+
+		// Remove the options and suite
+		delete global.options;
+		delete global.suite;
 	} catch(err) {
 		console.log(("Error in " + filename).red);
 		console.log(err.stack);
@@ -121,10 +139,12 @@ function run(files, callback) {
 		var file = files.pop();
 
 		if(file) {
-			// Get each file
-			getFile(path.resolve(process.cwd(), file), function(contents) {
+			// Check to see if the file exists.
+			fs.stat(file, function(err) {
+				if(err) return fail(err.code == "ENOENT" ? "Unable to find file '" + file + "'." : err);
+
 				//Benchmark each file
-				bench(contents, file, function(results) {
+				bench(file, function(results) {
 					// Store the results
 					_results[file] = results;
 
@@ -137,18 +157,6 @@ function run(files, callback) {
 }
 
 /**
- * Get a file only if it exists, otherwise fail.
- * @param {String} path 
- * @param {Function} callback(files)
- */
-function getFile(filePath, callback) {
-	fs.readFile(filePath, function(err, file) {
-		if(err) return fail(err.code == "ENOENT" ? "File '" + path.basename(filePath) + "' does not exist." : err);
-		callback(file);
-	});
-}
-
-/**
  * Exit the script gracefully with an error message.
  * @param  {String} message  Error message.
  * @param  {Number} exitCode Error code supplied to process.exit
@@ -157,7 +165,6 @@ function fail(message, exitCode) {
 	if(typeof message == "object") throw message;
 
 	console.warn(message);
-	help();
 	process.exit(exitCode);
 }
 
