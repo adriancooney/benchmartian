@@ -1,6 +1,6 @@
 {
   "name": "benchmartian",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Benchmark.js mocha like command line interface",
   "bin": {
     "benchmartian": "./bin/benchmartian"
@@ -11,7 +11,15 @@
     "test",
     "benchmarkjs"
   ],
-  "author": "Adrian Cooney",
+  "author": {
+    "name": "Adrian Cooney",
+    "email": "cooney.adrian@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/visionmedia/mocha.git"
+  },
+  "homepage": "https://github.com/dunxrion/benchmartian",
   "license": "MIT",
   "dependencies": {
     "benchmark": "~1.0.0",
