@@ -36,7 +36,7 @@ Benchmartian will take an array of files as arguments or if no arguments are giv
 	  --help                   Print this help.
 
 ## Benchmarks
-To make defining benchmarks incredibly simple, `benchmartian` exposes all method on the `benchmark.Suite` prototype into the global scope which allows for concise definitions. The only function `benchmartian` calls (if it hasn't already been called with your own options) is `suite.run`. The reporters take care of handling the output so you can sit back and focus on your benchmarks.
+To make defining benchmarks incredibly simple, `benchmartian` exposes all [methods on the `benchmark.Suite` prototype](http://benchmarkjs.com/docs#Suite_prototype_abort) into the global scope which allows for concise definitions. The only function `benchmartian` calls (if it hasn't already been called with your own options) is `suite.run`. The reporters take care of handling the output so you can sit back and focus on your benchmarks. 
 
 Example from the [benchmarkjs.com homepage](http://benchmarkjs.com).
 ```js
@@ -59,10 +59,10 @@ add('String#indexOf', function() {
   'Hello World!'.indexOf('o') > -1;
 });
 
-run({
-	async: true
-});
+options.maxTime = 3; // Second
 ```
+
+Since `benchmark.Suite` is exposed, you can configure how the benchmarks are run by supplying options to the `run` function or set them on the global `options` variable. For the options documentation, see [here](http://benchmarkjs.com/docs#options).
 
 ## Reporters
 Reporters for `benchmartian` are made incredibly easy by the `benchmark.js` library. To begin, create a Javascript file by the name of your reporter in the `reporters/` directory and require the `index.js` file. See `reporter/basic.js` for an example.
