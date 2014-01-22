@@ -1,6 +1,6 @@
 # Benchmartian
 ### Run Javascript benchmarks from the CLI
-Benchmartian allows you to run your incredible [benchmark.js][http://benchmarkjs.com] benchmarks from the command line much like you would any other test suite such as `mocha`.
+Benchmartian allows you to run your incredible [benchmark.js](http://benchmarkjs.com) benchmarks from the command line much like you would any other test suite such as `mocha`.
 
 ### Install
 Install from npm.
@@ -24,7 +24,7 @@ And to run benchmarks:
 Simple as.
 
 ## Usage
-Benchmartian will take an array of files as arguments or if no arguments are given, `benchmartian` will look in `benchmark/` directory of current working directory. You can also supply a reporter which will define how the test results are outputted. To see a list of reporters do `benchmartian --reporters`.
+Benchmartian will take an array of files as arguments or if no arguments are given, `benchmartian` will look in `benchmark/` directory of the current working directory. You can also supply a reporter which will define how the test results are outputted. To see a list of reporters do `benchmartian --reporters`.
 
 
 	benchmartian -- Run benchmark.js benchmarks from the CLI.
@@ -72,14 +72,16 @@ Reporters for `benchmartian` are made incredibly easy by the `benchmark.js` libr
 ```
 
 The reporter's job is to handle different events emitted by `benchmartian` and a `benchmark.Suite` on a suite. `benchmartian` emits 3 events:
-* `begin` with the `(files)` as an argument.
-* `file` with `(filename, suite)`. It's in this callback where you define your [`benchmark.Suite` events](http://benchmarkjs.com/docs#options_onAbort).
-* `complete` with `(results)`. Results is a key value store of `filename: suite` so you can compile a comphrensive report.
+* `"begin"` with the `(files)` as an argument.
+* `"file"` with `(filename, suite)`. It's in this callback where you define your [`benchmark.Suite` events](http://benchmarkjs.com/docs#options_onAbort).
+* `"complete"` with `(results)`. Results is a key value store of `results[filename] = suite` so you can compile a comphrensive report. For extracting data from the benchmarks, see [here](http://benchmarkjs.com/docs#prototype_stats).
 
 Finally, export your reporter:
 ```js
 	module.exports = reporter;
 ```
+
+All reporters welcome, submit a pull request and we'll stick it in. The default spot is definitely open for something more pretty.
 
 ## Thanks
 Thanks to the authors of the incredible [benchmark.js](http://benchmarkjs.com) library. `benchmartian` owes it's existance to it.
